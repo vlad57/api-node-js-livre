@@ -1,0 +1,22 @@
+{
+  "name": "api-node-js-livre",
+  "version": "1.0.0",
+  "description": "Api test technique entretien, livres",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vlad57/api-node-js-livre.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/vlad57/api-node-js-livre/issues"
+  },
+  "homepage": "https://github.com/vlad57/api-node-js-livre#readme",
+  "dependencies": {
+    "express": "^4.17.1"
+  }
+}
