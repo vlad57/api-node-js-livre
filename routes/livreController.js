@@ -150,7 +150,7 @@ module.exports = {
         });
     },
 
-    deleteLivre: function(req, res) {
+    deleteLivreSave: function(req, res) {
         var headerAuth  = req.headers['authorization'];
         var userId = jwtUtils.getUserId(headerAuth);
 
@@ -173,7 +173,7 @@ module.exports = {
                 if (userFound) {
                     models.Livre.findOne({
                         attributes: ['id'],
-                        where: { id: livreId }
+                        where: { id: livreId, user_id: userId }
                     }).then(function(getLivre) {
                         done(null, getLivre);
                     }).catch(function(err) {
@@ -220,12 +220,90 @@ module.exports = {
     },
 
 
+    deleteLivre: function(req, res) {
+        var headerAuth  = req.headers['authorization'];
+        var userId = jwtUtils.getUserId(headerAuth);
+
+        var livreId = req.body.livreId;
+
+
+        asyncLib.waterfall([
+            function(done) {
+                models.User.findOne({
+                  where: { id: userId }
+                })
+                .then(function(userFound) {
+                  done(null, userFound);
+                })
+                .catch(function(err) {
+                  return res.status(500).json({ 'error': 'Impossible de vérifier l utilisateur.' });
+                });
+            },
+            function(userFound, done) {
+                if (userFound) {
+                    models.Livre.findAll({
+                        attributes: ['id'],
+                        where: { id: livreId, user_id: userId }
+                    }).then(function(getLivre) {
+                        done(null, getLivre);
+                    }).catch(function(err) {
+                        return res.status(500).json({ 'error': err});
+                    });
+                } else {
+                    return res.status(404).json({ 'error': 'Utilisateur introuvable.'});
+                }
+            },
+
+            function(getLivre, done) {
+
+                if (getLivre) {
+                    let removedLivres = [];
+
+                    getLivre.forEach(item => {
+                        models.CategorieLivre.destroy({
+                            where: {livre_id : item.id}
+                        }).then(function(getRemovedCategorieLivre) {
+    
+                            item.destroy({
+                            }).then(function(getRemovedLivre) {
+                                removedLivres.push(getRemovedLivre);
+                            }).catch(function(err) {
+                                console.log(err)
+                                return res.status(500).json({ 'error': err});
+                            });
+    
+                        }).catch(function(err) {
+                            console.log(err)
+                            return res.status(500).json({ 'error': err});
+                        });
+                    });
+
+                    done(removedLivres);
+
+                } else {
+                    return res.status(404).json({ 'error': 'Livre non trouvé.'});
+                }
+    
+            },
+        ], 
+        function(removedLivres) {
+            if (removedLivres) {
+                return res.status(200).json({ 'success': 'Suppression effectuée', 'deleted': true });
+            } else {
+                return res.status(404).json({ 'error': 'Categorie non supprimée.'});
+            }
+        });
+
+    },
+
+
     listLivre: function(req, res) {
         var headerAuth  = req.headers['authorization'];
         var userId = jwtUtils.getUserId(headerAuth);
 
         var limit   = parseInt(req.query.limit);
         var offset  = parseInt(req.query.offset);
+        var userIdQuery = parseInt(req.query.userId);
 
         asyncLib.waterfall([
             function(done) {
@@ -240,8 +318,13 @@ module.exports = {
 
             function(userFound, done) {
                 if (userFound) {
+                    let whereCond = {};
+                    if (userIdQuery) {
+                        whereCond = {user_id: userIdQuery};
+                    }
+                    
                     models.Livre.findAndCountAll({
-                        //where: {user_id: userId},
+                        where: whereCond,
                         limit: (!isNaN(limit)) ? limit : null,
                         offset: (!isNaN(offset)) ? offset : null,
                         include: [

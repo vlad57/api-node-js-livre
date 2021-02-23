@@ -137,7 +137,7 @@ module.exports = {
                 if (userFound) {
                     models.Categorie.findOne({
                         attributes: ['id'],
-                        where: { id: categorieId }
+                        where: { id: categorieId, user_id: userId }
                     }).then(function(getCategorie) {
                         done(null, getCategorie);
                     }).catch(function(err) {
