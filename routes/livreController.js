@@ -128,7 +128,7 @@ module.exports = {
 
             function(livreUpdated, done) {
 
-                if (categoriesIds && categoriesIds.length > 0) {
+                if (categoriesIds && categoriesIds) {
                     livreUpdated.setCategories(categoriesIds)
                     .then(function(updatedLivreCategorie) {
                         done(livreUpdated, updatedLivreCategorie);
@@ -150,7 +150,7 @@ module.exports = {
         });
     },
 
-    deleteLivreSave: function(req, res) {
+    /*deleteLivreSave: function(req, res) {
         var headerAuth  = req.headers['authorization'];
         var userId = jwtUtils.getUserId(headerAuth);
 
@@ -217,7 +217,7 @@ module.exports = {
             }
         });
 
-    },
+    },*/
 
 
     deleteLivre: function(req, res) {
@@ -305,6 +305,8 @@ module.exports = {
         var offset  = parseInt(req.query.offset);
         var userIdQuery = parseInt(req.query.userId);
 
+        var totalLivres = 0;
+
         asyncLib.waterfall([
             function(done) {
                 models.User.findOne({
@@ -339,7 +341,21 @@ module.exports = {
                         ]
                     })
                     .then(function(livres) {
-                        done(livres);
+
+                        let whereCondCount = {};;
+                        if (userIdQuery) {
+                            whereCondCount = {user_id: userIdQuery};
+                        }
+
+                        models.Livre.count({
+                            where: whereCondCount
+                        }).then(function(counted) {
+                            totalLivres = counted;
+                            done(livres, totalLivres);
+                        });
+
+
+                        
                     })
                     .catch(function(err) {
                         return res.status(500).json({'error': err});
@@ -348,11 +364,11 @@ module.exports = {
                 }
             }
 
-        ], function(livres) {
-            if (livres) {
-                return res.status(200).json({'livres': livres});
+        ], function(livres, totalLivres) {
+            if (livres && totalLivres) {
+                return res.status(200).json({'livres': livres, 'totalLivre': totalLivres});
             } else {
-                return res.status(404).json({'error': "Livres introuvables."});
+                return res.status(200).json('Livres vides.');
             }
         });
     },

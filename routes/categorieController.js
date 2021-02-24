@@ -114,7 +114,7 @@ module.exports = {
     },
 
 
-    deleteCategorie: function(req, res) {
+    /*deleteCategorie: function(req, res) {
         var headerAuth  = req.headers['authorization'];
         var userId = jwtUtils.getUserId(headerAuth);
 
@@ -181,6 +181,86 @@ module.exports = {
             }
         });
 
+    },*/
+
+    deleteCategorie: function(req, res) {
+        var headerAuth  = req.headers['authorization'];
+        var userId = jwtUtils.getUserId(headerAuth);
+
+        var categorieId = req.body.categorieId;
+
+
+        asyncLib.waterfall([
+            function(done) {
+                models.User.findOne({
+                  where: { id: userId }
+                })
+                .then(function(userFound) {
+                  done(null, userFound);
+                })
+                .catch(function(err) {
+                  return res.status(500).json({ 'error': 'Impossible de vérifier l utilisateur.' });
+                });
+            },
+            function(userFound, done) {
+                if (userFound) {
+                    models.Categorie.findAll({
+                        attributes: ['id'],
+                        where: { id: categorieId, user_id: userId }
+                    }).then(function(getCategorie) {
+                        done(null, getCategorie);
+                    }).catch(function(err) {
+                        return res.status(500).json({ 'error': err});
+                    });
+                } else {
+                    return res.status(404).json({ 'error': 'Utilisateur introuvable.'});
+                }
+            },
+
+            function(getCategorie, done) {
+
+                if (getCategorie) {
+
+                    let removedCategorie = [];
+
+
+                    getCategorie.forEach(item => {
+
+                        models.CategorieLivre.destroy({
+                            where: {categorie_id : item.id}
+                        }).then(function(getRemovedCategorieLivre) {
+    
+                            item.destroy({
+                            }).then(function(getRemovedCategorie) {
+                                removedCategorie.push(getRemovedCategorie);
+                            }).catch(function(err) {
+                                console.log(err)
+                                return res.status(500).json({ 'error': err});
+                            });
+    
+                        }).catch(function(err) {
+                            console.log(err)
+                            return res.status(500).json({ 'error': err});
+                        });
+
+                    });
+
+                    done(removedCategorie);
+
+                } else {
+                    return res.status(404).json({ 'error': 'Catégorie non trouvée.'});
+                }
+    
+            },
+        ], 
+        function(removedCategorie) {
+            if (removedCategorie) {
+                return res.status(200).json({ 'success': 'Suppression effectuée', 'deleted': true });
+            } else {
+                return res.status(404).json({ 'error': 'Categorie non supprimée.'});
+            }
+        });
+
     },
 
     listCategorie: function(req, res) {
@@ -189,6 +269,8 @@ module.exports = {
 
         var limit   = parseInt(req.query.limit);
         var offset  = parseInt(req.query.offset);
+
+        var totalCategories = 0;
 
         asyncLib.waterfall([
             function(done) {
@@ -219,7 +301,14 @@ module.exports = {
                         ]
                     })
                     .then(function(categories) {
-                        done(categories);
+
+
+                        models.Categorie.count({
+                            where: {user_id: userId}
+                        }).then(function(counted) {
+                            totalCategories = counted;
+                            done(categories, totalCategories);
+                        });
                     })
                     .catch(function(err) {
                         return res.status(500).json({'error': err});
@@ -228,11 +317,11 @@ module.exports = {
                 }
             }
 
-        ], function(categories) {
-            if (categories) {
-                return res.status(200).json({'categories': categories});
+        ], function(categories, totalCategories) {
+            if (categories && totalCategories) {
+                return res.status(200).json({'categories': categories, 'totalCategorie': totalCategories});
             } else {
-                return res.status(404).json({'error': "Catégories introuvables."});
+                return res.status(200).json('Catégories vides.');
             }
         });
     },
