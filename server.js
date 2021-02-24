@@ -27,6 +27,8 @@ server.get('/', function(req, res) {
 server.use('/api/', apiRouter);
 
 //Run server
-server.listen(8081, function() {
+const PORT = process.env.PORT || 8081;
+
+server.listen(PORT, function() {
     console.log('Serveur démarré');
 });

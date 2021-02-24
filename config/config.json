@@ -1,9 +1,9 @@
 {
   "development": {
-    "username": "root",
-    "password": null,
-    "database": "projet_livre",
-    "host": "127.0.0.1",
+    "username": "u0g1hnu6qvj8yfn2",
+    "password": "TqqM1GMWhKqKKtCRoFBS",
+    "database": "bsub8m9yezv7o8shftmq",
+    "host": "bsub8m9yezv7o8shftmq-mysql.services.clever-cloud.com",
     "dialect": "mysql"
   },
   "test": {
@@ -21,3 +21,4 @@
     "dialect": "mysql"
   }
 }
+
