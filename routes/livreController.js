@@ -2,6 +2,8 @@
 var models   = require('../models');
 var asyncLib = require('async');
 var jwtUtils = require('../utils/jwt.utils');
+const Sequelize = require('sequelize');
+const Op = Sequelize.Op;
 
 module.exports = {
 
@@ -418,5 +420,68 @@ module.exports = {
             }
         });
     },
+
+
+    checkLivretitle: function(req, res) {
+        var headerAuth  = req.headers['authorization'];
+        var userId = jwtUtils.getUserId(headerAuth);
+
+        var livreId   = parseInt(req.body.livreId);
+        var textTitle = req.body.livreTitle;
+
+        asyncLib.waterfall([
+            function(done) {
+                models.User.findOne({
+                    where: {id: userId}
+                }).then(function(userFound) {
+                    done(userFound);
+                }).catch(function(err) {
+                    return res.status(500).json({'error': 'Unable to verify user'});
+                });
+            }
+        ], function(userFound) {
+            if (userFound) {
+
+                let whereCond = {
+                    titre: {
+                        [Op.like]: textTitle
+                    }
+                };
+
+                if (livreId) {
+                    whereCond = {
+                        //id: livreId,
+                        titre: {
+                            [Op.like]: textTitle
+                        }
+                    }
+                }
+
+                models.Livre.findAll({
+                    where: whereCond,
+                    include: [
+                        {
+                            model: models.User,
+                            attributes: [ 'id', 'username' ]
+                        },
+                        {
+                            model: models.Categorie,
+                            attributes: ['id', 'titre', 'description', 'code']
+                        }
+                    ]
+                })
+                .then(function(livre) {
+                    if (livre) {
+                        return res.status(200).json({livre: livre, isEmpty: false});
+                    } else {
+                        res.status(200).json({isEmpty: true})
+                    }
+                })
+                .catch(function(err) {
+                    return res.status(500).json({'error': err});
+                });
+            }
+        });
+    }
 
 };

@@ -35,6 +35,9 @@ exports.router = (function() {
     apiRouter.route('/livre/list/').get(livreCtrl.listLivre);
     apiRouter.route('/livre/:livreId/').get(livreCtrl.getLivre);
 
+    apiRouter.route('/livre/checkTitle/').post(livreCtrl.checkLivretitle);
+    
+
     apiRouter.route('/amIAuth').post(userCtrl.amIAuth);
 
     return apiRouter;
